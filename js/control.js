@@ -1,3 +1,98 @@
+var LocalStorage = {
+    ifsupport : window.localStorage ? true : false,
+    setItem : function(key,value){
+        try{
+           window.localStorage.setItem(key,value);
+        }catch(e){
+        }
+    },
+    getItem : function(key){
+      try{
+         return window.localStorage.getItem(key);
+      }catch(e){
+         return null;
+      }
+    },
+    removeItem : function(key){
+       try{
+         window.localStorage.removeItem(key);
+       }catch(e){
+       }
+    },
+    checkStorage : function(key,value){
+        
+    },
+    appendItem :function(key,value){
+        try{
+         var _orgVal = window.localStorage.getItem(key);
+         if(!_orgVal){
+            this.setItem(key,value);
+            return;
+         }
+         var arr = _orgVal.length > 0 ? _orgVal.split(","):[];
+         if(arr.length > 2){
+            for(var i = 0 ; i < arr.length-2;i++){
+                var _key = arr.shift();
+                if(_key !== value){
+                  this.removeItem(_key+"_subtitle");
+                  this.removeItem(_key+"_remainTitles");
+                  this.removeItem(_key+"_SUBTITLEAXIS");
+                  this.removeItem(_key+"_SUBTITLEAXIS_REMAIN");
+                }
+            }
+          }
+          _orgVal = arr.join(",");
+          if(_orgVal.indexOf(value) < 0){
+             arr.push(value);
+          }
+          window.localStorage.setItem(key,arr.join(","));
+        }catch(e){
+        }
+    }
+};
+
+var Cookie = {
+     set : function(key,value,expires){
+        this.remove(key);
+        var expStr ="";
+       if(expires){
+           var time = new Date().getTime();
+           time += expires;
+           expStr = ";expires="+new Date(time).toGMTString();
+        }
+        var _domain = ";domain=yxgapp.com";
+        document.cookie = key + "=" + encodeURIComponent(value) + expStr+_domain;
+    },
+
+    get : function(key){
+        if(document.cookie.length > 0){
+            var _cstart = document.cookie.indexOf(key+"=");
+            if(_cstart > -1){
+                _cstart = _cstart + key.length + 1;
+                var _cend = document.cookie.indexOf(";",_cstart);
+                if(_cend === -1){
+                    _cend = document.cookie.length;
+                }
+                return  decodeURIComponent(document.cookie.substring(_cstart,_cend));
+            }
+        }
+        return "";
+    },
+
+    remove : function(key){
+        if(document.cookie.length > 0){
+            var _arr = document.cookie.split(";");
+            for(var i = 0 ; i < _arr.length ; i++ ){
+              var _iarr = _arr[i].split("=");
+              if(_iarr[0] === key){
+                _arr.pop(i);
+                break;
+              }
+            }
+        }
+    }
+};
+
 /**
  * 播放组件
  * @type {Object}
@@ -250,6 +345,7 @@ var videoPlayer = {
        this.startTime = _time;
     }
 };
+
 /**
  * subtitle处理字幕信息
  * @type {Object}
@@ -289,19 +385,21 @@ var subtitle = {
         }
         this.initRemainTitle();
         LocalStorage.appendItem("videos",this.videoId);
+        //this.getStatus();
         this.getData();
     },
     getData:function(){
         //if(this.dataOk) return;
         this.requestTime++;
-        var _url = "http://m.yxgapp.com/d/mooc/SyncSubtitle.json",
+        var _url = "http://m.yxgapp.com/mooc/" + this.params.videoId + "/DownloadSubtitle.json?"+new Date().getTime(),
+        //var _url = "http://m.yxgapp.com/d/mooc/SyncSubtitle.json",
             _self = this;
         var _params = this.params;
         _params.version = this.version;
         $.ajax({
             url:_url,
-            data:_params,
             dataType:"json",
+            data:_params,
             success:function(data){
               _self.getCallback(data);
             },
@@ -323,12 +421,16 @@ var subtitle = {
            alert("登录失效，请重新登录");
         }
       }else{
+        //不做大改动兼容之前的数据结构 进行重构
+        data.subtitle.subtitleItems = this.handleItems(data.subtitle.subtitleItems,data.subtitle.subtitleTimestamp);
         //如果存在缓存 已缓存数据为标准，仅仅改变缓存数据的version
         if(this.version === -1){
            //缓存中没有数据 先讲数据进行排列处理
-           data.subtitle.subtitleItems = this.queueItems(data.subtitle.subtitleItems);
+           //新版字幕下载接口不需要再进行重新排序 
+          // data.subtitle.subtitleItems = this.queueItems(data.subtitle.subtitleItems);
            this.data = data.subtitle;
-           this.version = data.subtitle.version;
+           this.version = data.subtitle.subtitleTimestamp;
+           data.subtitle.version = this.version;
            this.dataOk = true;
            this.initData();
         }else{
@@ -381,6 +483,44 @@ var subtitle = {
         }
         return _newItems;
     },
+    /**
+     * 兼容之前的脚本，讲新版本的数据处理为原来的格式
+     * @param  {Array} subtitleItems [description]
+     * @return {[type]}               [description]
+     */
+    handleItems : function (subtitleItems, timeStamp,baseLanguage) {
+       var i = 0, _len = subtitleItems.length,
+           _newItems = [];
+       for(; i < _len ;i++){
+          var _newItem = {};
+          _newItem.id =  subtitleItems[i].id;
+          _newItem.startTime =  subtitleItems[i].startTime;
+          _newItem.endTime = subtitleItems[i].endTime;
+          _newItem.index = (i+1);
+          _newItem.version = timeStamp;
+          _newItem.isDifficult = subtitleItems[i].isDifficult;
+          var _data = subtitleItems[i].data;
+          var j = 0, _ilen = _data.length;
+          if(_ilen === 0){
+              _newItem.baseSubtitleItem =  null;
+              _newItem.extSubtitleItem = null;
+          }else if(_ilen === 1){
+              _newItem.baseSubtitleItem =  _data[0];
+              _newItem.baseSubtitleItem.isDifficult = 3;
+              _newItem.extSubtitleItem = null;
+          }else{
+              _newItem.baseSubtitleItem =  _data[0];
+              _newItem.extSubtitleItem = _data[1];
+              _newItem.baseSubtitleItem.isDifficult = 3;
+              _newItem.extSubtitleItem.isDifficult = 3;
+          }
+          _newItem = this.checkItem(_newItem);
+          _newItem.baseSubtitleItem.language === "英文" ? _newItem.baseSubtitleItem.language = "en" :"";
+          _newItem.extSubtitleItem.language === "中文" ?_newItem.extSubtitleItem.language = "ch" : "";
+          _newItems.push(_newItem);
+       }
+       return _newItems;
+    },
     //检查每一个新的item
     checkItem : function(_item){
       _item.sTime = this.getTimeModel(_item.startTime);
@@ -393,6 +533,7 @@ var subtitle = {
             content:"",
             isDifficult : 3,
             autoCaption : 0,
+            language : "en"
         };
       }
       if(!_item.extSubtitleItem){
@@ -401,7 +542,8 @@ var subtitle = {
             historyType : 2,
             content:"",
             isDifficult : 3,
-            autoCaption : 0
+            autoCaption : 0,
+            language : "ch"
         };
       }
       return _item;
@@ -414,12 +556,30 @@ var subtitle = {
         $(this.liDomList[this.unComplateIndex]).find(".ch-area").focus();
     },
     /*获取线上数据之后和本地数据进行对比*/
+  /*  checkLocalData : function(newSubtitle){
+        var _subTitleItems  = newSubtitle.subtitleItems,
+            _len = _subTitleItems.length;
+        for(var i = 0 ; i < _len ; i++){
+           var _item = _subTitleItems[i];
+           var _index = _item.index - 1;
+           if(_item.version > this.data.subtitleItems[_index].version){
+               _item = this.checkItem(_item);
+               this.data.subtitleItems[_index] = _item;
+           }
+        }
+        if(newSubtitle.version > this.data.version){
+           this.data.version = newSubtitle.version;
+           this.version = newSubtitle.version;
+        }
+    },*/
+    //重写线上和线下合并的脚本内容
     checkLocalData : function(newSubtitle){
         var _subTitleItems  = newSubtitle.subtitleItems,
             _len = _subTitleItems.length;
         for(var i = 0 ; i < _len ; i++){
            var _item = _subTitleItems[i];
            var _index = _item.index - 1;
+           var _localItem = this.data.subtitleItems[_index];
            if(_item.version > this.data.subtitleItems[_index].version){
                _item = this.checkItem(_item);
                this.data.subtitleItems[_index] = _item;
@@ -696,9 +856,10 @@ var subtitle = {
         _params.videoId = this.params.videoId;
         _params.version = version;
         _params.newSubtitle = JSON.stringify(newSubtitle);
+        _params.from = 3;
         var _self = this;
         $.ajax({
-         url:'http://m.yxgapp.com/d/mooc/SyncSubtitle.json',
+         url:'http://m.yxgapp.com/d/mooc/UpdateSubtitle.json',
          data:_params,
          type:"POST",
          dataType:"json",
@@ -773,18 +934,45 @@ var subtitle = {
     },
     //用户提交成功之后，重置信息
     resetSubTitleItems : function(data){
-       this.data.version = data.subtitle.version;
+       this.data.version = data.timestamp;
        this.version = this.data.version;
-       if(data.subtitle.subtitleItems.length > 0){
+       /*if(data.subtitle.subtitleItems.length > 0){
           var _subtitleItems = data.subtitle.subtitleItems;
           this.checkLocalData(data.subtitle);
-        }
+        }*/
         LocalStorage.setItem(this.storeKey,JSON.stringify(this.data));
     },
+    /**
+     * 获取字幕静态化状态
+     * @return {} [description]
+     */
+    getStatus : function(){
+        //var _url = "​http://m.yxgapp.com/d/mooc/GetStaticSubtitleState.json";
+        var params = this.params;
+        params.subtitleTimestamp =  Math.ceil(new Date().getTime()/1000);
+
+        var _self = this;
+        $.ajax({
+          url : "http://m.yxgapp.com/d/mooc/GetStaticSubtitleState.json",
+          data : params,
+          type : "GET",
+          dataType : "json",
+          success : function(data){
+              if(data.result){
+
+              }
+          },
+          error : function() {
+             _self.getData();
+          }
+        });
+    },
+
     resetOption : function(){
        this.changeCurItem(0);
     }
 };
+
 var contentControl = {
      init : function(videoPlayer,subtitle){
          this.getUserInfo();
