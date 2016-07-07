@@ -1039,12 +1039,12 @@ var contentControl = {
      showErrorNote : function(msg){
         this.hideLoadNote();
         msg = msg ? msg : "登陆状态失效，请重新扫描二维码进行登录";
-        var _loginurl = "http://t.yxgapp.com/d/mooc/webClient/login.html";//上线的时候需要改动
+        var _loginurl = "http://t.yxgapp.com/index.html";//上线的时候需要改动
         $("#js_mask").show();
         var btn = $("#js_note .layui-layer-btn0");
         var _conten = $("#js_note .layui-layer-content").html(msg);
         btn.html("前往扫描二维码");
-        btn.attr("href",_loginurl);
+        btn.attr("href",_loginurl);index.html
         $("#js_note .layui-layer-btn").show();
         $("#js_note").show();
         window.tokenError = true;
