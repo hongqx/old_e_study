@@ -168,7 +168,7 @@ var subtitle = {
           }
           _newItem = this.checkItem(_newItem);
           _newItem.baseSubtitleItem.language === "英文" ? _newItem.baseSubtitleItem.language = "en" :"";
-          _newItem.extSubtitleItem.language === "中文" ?_newItem.extSubtitleItem.language = "ch" : "";
+          _newItem.extSubtitleItem.language === "中文" ?_newItem.extSubtitleItem.language = "zh" : "";
           _newItems.push(_newItem);
        }
        return _newItems;
@@ -195,7 +195,7 @@ var subtitle = {
             content:"",
             isDifficult : 3,
             autoCaption : 0,
-            language : "ch"
+            language : "zh"
         };
       }
       return _item;
@@ -275,7 +275,7 @@ var subtitle = {
         this.container.delegate(".ch-area","focus",function(e){
            //console.log("ch-area focus");
            _self.edit = true;
-           _self.editType = "ch";
+           _self.editType = "zh";
            return false;
         });
         this.container.delegate(".ch-area","blur",function(e){
@@ -335,7 +335,7 @@ var subtitle = {
     },
     chClick : function(target, e){
         this.edit = true;
-        this.editType = "ch";
+        this.editType = "zh";
         this.changeIndex(target,e);
         return false;
     },
@@ -391,6 +391,7 @@ var subtitle = {
             _basesubtitle.username = this.userInfo.username;
             _basesubtitle.userNickname = this.userInfo.nickname;
             _basesubtitle.isDifficult = 3;
+            _basesubtitle.historyType = 1;
             this.saveSubtitle(_basesubtitle,_index);
         }
     },
@@ -510,7 +511,7 @@ var subtitle = {
         _params.newSubtitle = JSON.stringify(newSubtitle);
         _params.from = 3;
         var _self = this;
-        $.ajax({
+        /*$.ajax({
          url:'http://m.yxgapp.com/d/mooc/UpdateSubtitle.json',
          data:_params,
          type:"POST",
@@ -534,7 +535,7 @@ var subtitle = {
            //存入缓存
            _self.setRemainSubTitles(newSubtitle);
          }
-       });
+       });*/
     },
     //定时检查当前缓存中是否存在未提交的数据
     setCheckTimer : function(){
@@ -572,7 +573,7 @@ var subtitle = {
         LocalStorage.setItem(this.remainKey , JSON.stringify(this.remainSubtitles));
     },
     saveSubtitle : function(subtitle,_index){
-       if(parseInt(subtitle.historyType) === 1){
+       if(subtitle.language === 'en'){
           this.data.subtitleItems[_index].baseSubtitleItem = subtitle;
        }else{
           this.data.subtitleItems[_index].extSubtitleItem =  subtitle;
@@ -621,6 +622,6 @@ var subtitle = {
     },
 
     resetOption : function(){
-       this.changeCurItem(0);
+       //this.changeCurItem(0);
     }
 };
