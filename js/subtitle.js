@@ -1,5 +1,6 @@
 /**
  * subtitle处理字幕信息
+ * update by hongqx 2016-07-25
  * @type {Object}
  */
 var subtitle = {
@@ -168,7 +169,7 @@ var subtitle = {
           }
           _newItem = this.checkItem(_newItem);
           _newItem.baseSubtitleItem.language === "英文" ? _newItem.baseSubtitleItem.language = "en" :"";
-          _newItem.extSubtitleItem.language === "中文" ?_newItem.extSubtitleItem.language = "ch" : "";
+          _newItem.extSubtitleItem.language === "中文" ?_newItem.extSubtitleItem.language = "zh" : "";
           _newItems.push(_newItem);
        }
        return _newItems;
@@ -195,7 +196,7 @@ var subtitle = {
             content:"",
             isDifficult : 3,
             autoCaption : 0,
-            language : "ch"
+            language : "zh"
         };
       }
       return _item;
@@ -275,7 +276,7 @@ var subtitle = {
         this.container.delegate(".ch-area","focus",function(e){
            //console.log("ch-area focus");
            _self.edit = true;
-           _self.editType = "ch";
+           _self.editType = "zh";
            return false;
         });
         this.container.delegate(".ch-area","blur",function(e){
@@ -335,7 +336,7 @@ var subtitle = {
     },
     chClick : function(target, e){
         this.edit = true;
-        this.editType = "ch";
+        this.editType = "zh";
         this.changeIndex(target,e);
         return false;
     },
@@ -376,7 +377,7 @@ var subtitle = {
         target.hide();
         target.siblings('.en-txt').text(val).show();
         //包含中文 不做更新
-        if(/.*[\u4e00-\u9fa5]+.*$/.test(val)){
+        if(/.*\u4e00-\u9fa5+.*$/.test(val)){
            //target.val(target.siblings('.en-txt').val());
            target.siblings('.en-txt').addClass("en-error");
            return;
@@ -572,7 +573,7 @@ var subtitle = {
         LocalStorage.setItem(this.remainKey , JSON.stringify(this.remainSubtitles));
     },
     saveSubtitle : function(subtitle,_index){
-       if(parseInt(subtitle.historyType) === 1){
+       if(subtitle.language === 'en'){
           this.data.subtitleItems[_index].baseSubtitleItem = subtitle;
        }else{
           this.data.subtitleItems[_index].extSubtitleItem =  subtitle;
@@ -621,6 +622,6 @@ var subtitle = {
     },
 
     resetOption : function(){
-       this.changeCurItem(0);
+       //this.changeCurItem(0);
     }
 };

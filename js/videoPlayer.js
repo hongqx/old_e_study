@@ -186,6 +186,7 @@ var videoPlayer = {
     onEnded : function(){
         this.showControl();
         this.changeBtnState(false);
+        $(this.poster).show();
         if(this.options.onEnd){
             this.options.onEnd();
         }
