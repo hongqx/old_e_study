@@ -392,6 +392,7 @@ var subtitle = {
             _basesubtitle.username = this.userInfo.username;
             _basesubtitle.userNickname = this.userInfo.nickname;
             _basesubtitle.isDifficult = 3;
+            _basesubtitle.historyType = 1;
             this.saveSubtitle(_basesubtitle,_index);
         }
     },
@@ -511,7 +512,7 @@ var subtitle = {
         _params.newSubtitle = JSON.stringify(newSubtitle);
         _params.from = 3;
         var _self = this;
-        $.ajax({
+        /*$.ajax({
          url:'http://m.yxgapp.com/d/mooc/UpdateSubtitle.json',
          data:_params,
          type:"POST",
@@ -535,7 +536,7 @@ var subtitle = {
            //存入缓存
            _self.setRemainSubTitles(newSubtitle);
          }
-       });
+       });*/
     },
     //定时检查当前缓存中是否存在未提交的数据
     setCheckTimer : function(){
